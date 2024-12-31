@@ -11,7 +11,7 @@ public struct SnowFlakeLine : IDisposable
 
     LineRenderer[] lineRenderers;
 
-    public SnowFlakeLine(ObjectPool<LineRenderer> objectPoolRef, Color color)
+    public SnowFlakeLine(ObjectPool<LineRenderer> objectPoolRef, Color color, float width)
     {
         this.objectPoolRef = objectPoolRef;
 
@@ -26,6 +26,8 @@ public struct SnowFlakeLine : IDisposable
             lineRenderers[i] = objectPoolRef.Get();
             lineRenderers[i].startColor = color;
             lineRenderers[i].endColor = color;
+            lineRenderers[i].startWidth = width;
+            lineRenderers[i].endWidth = width;
         }
     }
 
@@ -38,6 +40,13 @@ public struct SnowFlakeLine : IDisposable
         }
     }
 
+    public int LineCount => points.Length;
+    public int GetPointCount(int lineIndex) => points[lineIndex].Length;
+
+    public float3 GetPoint(int lineIndex, int pointIndex)
+    {
+        return points[lineIndex][pointIndex];
+    }
 
     public void UpdateLineRenderers()
     {
