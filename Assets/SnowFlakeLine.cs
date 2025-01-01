@@ -10,6 +10,7 @@ public struct SnowFlakeLine : IDisposable
     ObjectPool<LineRenderer> objectPoolRef;
 
     LineRenderer[] lineRenderers;
+    const bool allowLineOptim = true;
 
     public SnowFlakeLine(ObjectPool<LineRenderer> objectPoolRef, Color color, float width)
     {
@@ -33,6 +34,32 @@ public struct SnowFlakeLine : IDisposable
 
     public void AddPoint(float3 point)
     {
+        if(allowLineOptim)
+        {
+            //First line is the true line, test for straightline
+            const int firstLine = 0;
+            if(points[firstLine].Length >= 2)
+            {
+                int lineCount = GetPointCount(firstLine);
+                float3 p0 = GetPoint(firstLine, lineCount - 2);
+                float3 p1 = GetPoint(firstLine, lineCount - 1);
+                float3 p2 = point;
+
+                //Optim, if p0, p1 and p2 for a straight line, remove p1
+                float3 d0 = math.normalize(p1 - p0);
+                float3 d1 = math.normalize(p2 - p1);
+                if(math.dot(d0, d1) > 0.999f)
+                {
+                    //form a straight line, we can remove middle point
+                    for (int i = 0; i < points.Length; i++)
+                    {
+                        points[i].RemoveAtSwapBack(lineCount - 1);
+                        UpdateLineRenderers();
+                    }
+                }
+            }
+        }
+
         for (int i = 0; i < points.Length; i++)
         {
             points[i].Add(SnowFlakeUtils.TransformPointMirror(point, i));

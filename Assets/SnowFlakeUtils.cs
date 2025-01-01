@@ -13,7 +13,7 @@ public static class SnowFlakeUtils
     /// </summary>
     public static float3 TransformPointMirror(float3 point, int index)
     {
-        bool isMirror = index % 2 == 0;
+        bool isMirror = index % 2 == 1;
         int rotationIndex = index / 2;
 
         //mirroring around 0
