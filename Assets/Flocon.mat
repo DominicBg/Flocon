@@ -71,6 +71,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AlphaQuantize: 1
     - _BUILTIN_QueueControl: 0
     - _BUILTIN_QueueOffset: 0
     - _BlendOp: 0
@@ -93,6 +94,7 @@ Material:
     - _FlashSpeed: 2
     - _FlashWidth: 6.7
     - _FlipbookMode: 0
+    - _Float: 0
     - _GlossMapScale: 1
     - _Glossiness: 0
     - _GlossyReflections: 1

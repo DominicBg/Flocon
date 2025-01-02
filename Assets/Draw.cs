@@ -23,6 +23,13 @@ public class Draw : MonoBehaviour
     public float panDuration = 10;
     public AnimationCurve panCurve;
 
+
+
+    [Header("Spin")]
+    public float spinDuration = 2;
+    public AnimationCurve spinCurve;
+    public float spinAngles = 360 * 5;
+
     [Header("Mesh")]
     public float meshThicc = 1;
     public bool doubleFace = false;
@@ -150,6 +157,8 @@ public class Draw : MonoBehaviour
         }
         renderer.SetMeshes(meshList.ToArray());
         ClearCurrentSnowFlake();
+
+        StartCoroutine(SpinFlake());
     }
 
     private void ClearCurrentSnowFlake()
@@ -458,6 +467,36 @@ public class Draw : MonoBehaviour
         {
             t += Time.deltaTime * panSpeed;
             zoomFactor = math.lerp(maxZoom, minZoom, panCurve.Evaluate(t));
+            yield return null;
+        }
+    }
+
+    IEnumerator SpinFlake()
+    {
+        if (showDebugLine)
+        {
+            ToggleDebugLines();
+        }
+        float t = 0;
+        float spinSpeed = 1f / spinDuration;
+
+        MeshRenderer meshRenderer = meshFilter.GetComponent<MeshRenderer>();
+        //Make a copy
+        var material = meshRenderer.material;
+        Color color = meshRenderer.material.color;
+
+        while (t < 1)
+        {
+            t += Time.deltaTime * spinSpeed;
+            float yEuler = spinCurve.Evaluate(t) * spinAngles;
+            quaternion rotation = quaternion.Euler(0, math.radians(yEuler), 0);
+            meshFilter.transform.rotation = rotation;
+
+            color.a = 1 - t;
+            material.color = color;
+            meshFilter.transform.localScale = new float3(1 - t);
+
+            //todo part dans le vent a place
             yield return null;
         }
     }
