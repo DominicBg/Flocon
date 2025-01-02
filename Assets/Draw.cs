@@ -13,22 +13,23 @@ public class Draw : MonoBehaviour
     public float lineWidth = 0.3f;
     public Color currentColor;
 
-    [Header("Zoom")]
-    float zoomFactor;
-    public float zoomSpeed = 0.5f;
-    public float minZoom = 0;
-    public float maxZoom = 10;
+    public float3 starPos = new float3(0, 0, -25);
+
 
     [Header("Pan")]
     public float panDuration = 10;
     public AnimationCurve panCurve;
 
+    public float3x3 panBezier;
+    public float3 panStartEulerAngle;
+    public float3 panEndEulerAngle;
 
 
     [Header("Spin")]
     public float spinDuration = 2;
     public AnimationCurve spinCurve;
     public float spinAngles = 360 * 5;
+    public float3 acceleration;
 
     [Header("Mesh")]
     public float meshThicc = 1;
@@ -42,6 +43,7 @@ public class Draw : MonoBehaviour
 
     [Header("Other")]
     bool showDebugLine = false;
+    public GameObject debugLines;
 
     ObjectPool<LineRenderer> objectPool;
     List<SnowFlakeLine> lines = new();
@@ -59,8 +61,8 @@ public class Draw : MonoBehaviour
     void Start()
     {
         objectPool = CreateObjectPool();
-        ResetZoom();
         mainCam = Camera.main;
+        ResetCamera();
         ToggleDebugLines();
     }
 
@@ -85,9 +87,6 @@ public class Draw : MonoBehaviour
 
     private void Update()
     {
-        zoomFactor = math.clamp(zoomFactor + Input.mouseScrollDelta.y * zoomSpeed, minZoom, maxZoom);
-        mainCam.transform.position = new float3(((float3)mainCam.transform.position).xy, zoomFactor);
-
         if (Input.GetMouseButtonDown(0))
         {
             currentLine = new SnowFlakeLine(objectPool, currentColor, lineWidth);
@@ -202,39 +201,23 @@ public class Draw : MonoBehaviour
         previousRecordedPoint = mousePos;
     }
 
-    void ResetZoom()
+    void ResetCamera()
     {
-        zoomFactor = (minZoom + maxZoom) / 2;
+        mainCam.transform.position = starPos;
+        mainCam.transform.rotation = quaternion.identity;
     }
 
     void ToggleDebugLines()
     {
         showDebugLine = !showDebugLine;
-        const int debugLineCount = 12;
         if (showDebugLine)
         {
-            ResetZoom();
-
-            for (int i = 0; i < debugLineCount; i++)
-            {
-                var debugLine = objectPool.Get();
-
-                debugLine.startWidth = 0.05f;
-                debugLine.endWidth = 0.1f;
-                debugLine.positionCount = 2;
-                debugLine.SetPosition(0, new float3(0, 0, 0));
-                debugLine.SetPosition(1, SnowFlakeUtils.TransformPointHalfHex(new float3(0, 100, 0), i));
-
-                toggleLines.Add(debugLine);
-            }
+            ResetCamera();
+            debugLines.SetActive(true);
         }
         else
         {
-            for (int i = 0; i < toggleLines.Count; i++)
-            {
-                objectPool.Release(toggleLines[i]);
-            }
-            toggleLines.Clear();
+            debugLines.SetActive(false);
         }
     }
 
@@ -461,12 +444,19 @@ public class Draw : MonoBehaviour
         {
             ToggleDebugLines();
         }
+
+        quaternion startRot = quaternion.Euler(math.radians(panStartEulerAngle));
+        quaternion endRot = quaternion.Euler(math.radians(panEndEulerAngle));
+
         float t = 0;
         float panSpeed = 1f / panDuration;
         while (t < 1)
         {
             t += Time.deltaTime * panSpeed;
-            zoomFactor = math.lerp(maxZoom, minZoom, panCurve.Evaluate(t));
+
+            float3 position = SnowFlakeUtils.Bezier(panBezier, t);
+            mainCam.transform.position = position;
+            mainCam.transform.rotation = math.slerp(startRot, endRot, t);
             yield return null;
         }
     }
@@ -477,6 +467,7 @@ public class Draw : MonoBehaviour
         {
             ToggleDebugLines();
         }
+
         float t = 0;
         float spinSpeed = 1f / spinDuration;
 
@@ -484,6 +475,9 @@ public class Draw : MonoBehaviour
         //Make a copy
         var material = meshRenderer.material;
         Color color = meshRenderer.material.color;
+
+        float3 velocity = 0;
+        meshFilter.transform.position = Vector3.zero;
 
         while (t < 1)
         {
@@ -494,10 +488,12 @@ public class Draw : MonoBehaviour
 
             color.a = 1 - t;
             material.color = color;
-            meshFilter.transform.localScale = new float3(1 - t);
 
-            //todo part dans le vent a place
+            velocity += acceleration * Time.deltaTime;
+            meshFilter.transform.position += (Vector3)velocity * Time.deltaTime;
+
             yield return null;
         }
+        ToggleDebugLines();
     }
 }

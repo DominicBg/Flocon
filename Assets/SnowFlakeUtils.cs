@@ -67,4 +67,17 @@ public static class SnowFlakeUtils
     {
         return math.all(math.abs(a - b) < approxDist);
     }
+
+    public static float3 Bezier(float3 p0, float3 p1, float3 p2, float t)
+    {
+        return math.lerp(math.lerp(p0, p1, t), math.lerp(p1, p2, t), t);
+    }
+
+    public static float3 Bezier(float3x3 bezier, float t)
+    {
+        float3 p0 = new float3(bezier.c0.x, bezier.c1.x, bezier.c2.x);
+        float3 p1 = new float3(bezier.c0.y, bezier.c1.y, bezier.c2.y);
+        float3 p2 = new float3(bezier.c0.z, bezier.c1.z, bezier.c2.z);
+        return Bezier(p0, p1, p2, t);
+    }
 }
