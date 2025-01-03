@@ -5,6 +5,7 @@ using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Pool;
+using UnityEngine.UI;
 
 //I swear, ill add a state machine one day
 public class Draw : MonoBehaviour
@@ -20,7 +21,7 @@ public class Draw : MonoBehaviour
     [Header("Pan")]
     public float panDuration = 10;
     public AnimationCurve panCurve;
-
+    public float fadeToBlackDuration = 1;
     public float3x3 panBezier;
 
     [Header("Spin")]
@@ -40,6 +41,7 @@ public class Draw : MonoBehaviour
     public LineRenderer lineRendererPrefab;
     public MeshFilter[] flakesInPath;
     public TextMeshProUGUI instructions;
+    public Image blackFade;
 
     [Header("Other")]
     bool showDebugLine = false;
@@ -178,7 +180,7 @@ public class Draw : MonoBehaviour
         renderer.SetMeshes(meshList.ToArray());
         ClearCurrentSnowFlake();
 
-        StartCoroutine(SpinFlakeCoroutine());
+        SetMode(Mode.ConfirmingFlake);
     }
 
     private void ClearCurrentSnowFlake()
@@ -466,11 +468,6 @@ public class Draw : MonoBehaviour
 
     IEnumerator CameraPanCoroutine()
     {
-        if (showDebugLine)
-        {
-            ToggleDebugLines();
-        }
-
         flakesPS.Play();
 
         int flakeCount = math.min(flakesInPath.Length, meshList.Count);
@@ -490,6 +487,8 @@ public class Draw : MonoBehaviour
             quaternion alignedRotation = quaternion.LookRotation(bezierDx, math.up());
             flakesInPath[i].transform.rotation = alignedRotation;
         }
+
+        StartCoroutine(FadeToBlack(false, fadeToBlackDuration));
 
         float t = 0;
         float panSpeed = 1f / panDuration;
@@ -518,21 +517,17 @@ public class Draw : MonoBehaviour
 
     IEnumerator SpinFlakeCoroutine()
     {
-        if (showDebugLine)
-        {
-            ToggleDebugLines();
-        }
-
         float t = 0;
         float spinSpeed = 1f / spinDuration;
 
-        MeshRenderer meshRenderer = meshFilter.GetComponent<MeshRenderer>();
-        //Make a copy
-        var material = meshRenderer.material;
-        Color color = meshRenderer.material.color;
-
         float3 velocity = 0;
         meshFilter.transform.position = Vector3.zero;
+        bool willGoToCameraPanning = meshList.Count == flakesToDraw;
+
+        if (willGoToCameraPanning)
+        {
+            StartCoroutine(FadeToBlack(true, spinDuration));
+        }
 
         while (t < 1)
         {
@@ -540,17 +535,15 @@ public class Draw : MonoBehaviour
             float yEuler = spinCurve.Evaluate(t) * spinAngles;
             quaternion rotation = quaternion.Euler(0, math.radians(yEuler), 0);
             meshFilter.transform.rotation = rotation;
-
-            color.a = 1 - t;
-            material.color = color;
-
             velocity += acceleration * Time.deltaTime;
             meshFilter.transform.position += (Vector3)velocity * Time.deltaTime;
+
+            meshFilter.transform.localScale = Vector3.one * (1 - t);
 
             yield return null;
         }
 
-        if(meshList.Count == flakesToDraw)
+        if(willGoToCameraPanning)
         {
             SetMode(Mode.CameraPanning);
         }
@@ -586,7 +579,7 @@ public class Draw : MonoBehaviour
 
     private void StartConfirmFlake()
     {
-        StartCoroutine(CameraPanCoroutine());
+        StartCoroutine(SpinFlakeCoroutine());
         ShowDebugLine(false);
         instructions.gameObject.SetActive(false);
     }
@@ -596,5 +589,24 @@ public class Draw : MonoBehaviour
         StartCoroutine(CameraPanCoroutine());
         ShowDebugLine(false);
         instructions.gameObject.SetActive(false);
+    }
+
+    IEnumerator FadeToBlack(bool fadetoBlack, float duration)
+    {
+        float fade = 0;
+        float fadeSpeed = 1f / duration;
+        while (fade < 1)
+        {
+            fade += Time.deltaTime * fadeSpeed;
+
+            float t = fade;
+            if(!fadetoBlack)
+            {
+                t = (1 - fade);
+            }
+
+            blackFade.color = Color.black * t;
+            yield return null;
+        }
     }
 }

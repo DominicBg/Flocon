@@ -83,16 +83,16 @@ Material:
     - _Cull: 2
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
-    - _DirectionGlareIntensity: 0.76
+    - _DirectionGlareIntensity: 0.45
     - _DistortionBlend: 0.5
     - _DistortionEnabled: 0
     - _DistortionStrength: 1
     - _DistortionStrengthScaled: 0
     - _DstBlend: 0
     - _EmissionEnabled: 0
-    - _FlashIntensity: 0.4
+    - _FlashIntensity: 0.24
     - _FlashSpeed: 2
-    - _FlashWidth: 6.7
+    - _FlashWidth: 46.82
     - _FlipbookMode: 0
     - _Float: 0
     - _GlossMapScale: 1
@@ -110,7 +110,7 @@ Material:
     - _SoftParticlesNearFadeDistance: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
-    - _StarsIntensity: 1
+    - _StarsIntensity: 0.91
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
