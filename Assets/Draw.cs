@@ -1,10 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Pool;
 
+//I swear, ill add a state machine one day
 public class Draw : MonoBehaviour
 {
     [Header("Draw")]
@@ -15,15 +17,11 @@ public class Draw : MonoBehaviour
 
     public float3 starPos = new float3(0, 0, -25);
 
-
     [Header("Pan")]
     public float panDuration = 10;
     public AnimationCurve panCurve;
 
     public float3x3 panBezier;
-    public float3 panStartEulerAngle;
-    public float3 panEndEulerAngle;
-
 
     [Header("Spin")]
     public float spinDuration = 2;
@@ -40,6 +38,8 @@ public class Draw : MonoBehaviour
     public ParticleSystem flakesPS;
     public MeshFilter meshFilter;
     public LineRenderer lineRendererPrefab;
+    public MeshFilter[] flakesInPath;
+    public TextMeshProUGUI instructions;
 
     [Header("Other")]
     bool showDebugLine = false;
@@ -49,21 +49,26 @@ public class Draw : MonoBehaviour
     List<SnowFlakeLine> lines = new();
     SnowFlakeLine currentLine;
     float currentDelay = 0;
+    const int flakesToDraw = 3;
 
-
-    List<LineRenderer> toggleLines = new();
     float3 previousRecordedPoint;
 
     Camera mainCam;
 
     List<Mesh> meshList = new List<Mesh>();
 
+    //Who has time to code a FSM anyway
+    public enum Mode { Drawing, ConfirmingFlake, CameraPanning}
+    Mode currentMode = Mode.Drawing;
+
     void Start()
     {
         objectPool = CreateObjectPool();
         mainCam = Camera.main;
         ResetCamera();
-        ToggleDebugLines();
+
+        flakesPS.Stop();
+        SetMode(Mode.Drawing);
     }
 
     ObjectPool<LineRenderer> CreateObjectPool()
@@ -86,6 +91,22 @@ public class Draw : MonoBehaviour
     }
 
     private void Update()
+    {
+        switch (currentMode)
+        {
+            case Mode.Drawing:
+                UpdateDrawingMode();
+                break;
+            case Mode.ConfirmingFlake:
+                //updated in coroutine
+                break;
+            case Mode.CameraPanning:
+                //updated in coroutine
+                break;
+        }
+    }
+
+    private void UpdateDrawingMode()
     {
         if (Input.GetMouseButtonDown(0))
         {
@@ -128,7 +149,7 @@ public class Draw : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.N))
         {
-            StartCoroutine(ZoomCoroutine());
+            SetMode(Mode.CameraPanning);
         }
     }
 
@@ -157,7 +178,7 @@ public class Draw : MonoBehaviour
         renderer.SetMeshes(meshList.ToArray());
         ClearCurrentSnowFlake();
 
-        StartCoroutine(SpinFlake());
+        StartCoroutine(SpinFlakeCoroutine());
     }
 
     private void ClearCurrentSnowFlake()
@@ -209,8 +230,13 @@ public class Draw : MonoBehaviour
 
     void ToggleDebugLines()
     {
-        showDebugLine = !showDebugLine;
-        if (showDebugLine)
+        ShowDebugLine(!showDebugLine);
+    }
+
+    void ShowDebugLine(bool show)
+    {
+        showDebugLine = show;
+        if (show)
         {
             ResetCamera();
             debugLines.SetActive(true);
@@ -438,15 +464,32 @@ public class Draw : MonoBehaviour
         return mesh;
     }
 
-    IEnumerator ZoomCoroutine()
+    IEnumerator CameraPanCoroutine()
     {
         if (showDebugLine)
         {
             ToggleDebugLines();
         }
 
-        quaternion startRot = quaternion.Euler(math.radians(panStartEulerAngle));
-        quaternion endRot = quaternion.Euler(math.radians(panEndEulerAngle));
+        flakesPS.Play();
+
+        int flakeCount = math.min(flakesInPath.Length, meshList.Count);
+        for (int i = 0; i < flakeCount; i++)
+        {
+            flakesInPath[i].mesh = meshList[i];
+
+            //create a division between points
+            //lines are index, x are desired pos
+            //| x | x | x | x |
+            float ratio = ((float)i + 1) / (flakeCount + 1);
+            float3 bezierPos = SnowFlakeUtils.Bezier(panBezier, ratio);
+            flakesInPath[i].transform.position = bezierPos;
+
+            const float dt = 0.01f;
+            float3 bezierDx = (bezierPos - SnowFlakeUtils.Bezier(panBezier, ratio + dt)) / dt;
+            quaternion alignedRotation = quaternion.LookRotation(bezierDx, math.up());
+            flakesInPath[i].transform.rotation = alignedRotation;
+        }
 
         float t = 0;
         float panSpeed = 1f / panDuration;
@@ -455,13 +498,25 @@ public class Draw : MonoBehaviour
             t += Time.deltaTime * panSpeed;
 
             float3 position = SnowFlakeUtils.Bezier(panBezier, t);
+            float3 positionDt = SnowFlakeUtils.Bezier(panBezier, t + 0.01f);
+
+            quaternion bezierRotation = quaternion.LookRotation(math.normalize(positionDt - position), math.up());
+
             mainCam.transform.position = position;
-            mainCam.transform.rotation = math.slerp(startRot, endRot, t);
+            mainCam.transform.rotation = bezierRotation; // math.slerp(startRot, endRot, t);
+
+            for (int i = 0; i < flakeCount; i++)
+            {
+                float3 localEuler = flakesInPath[i].transform.localEulerAngles;
+                localEuler.z = t * 360;
+                flakesInPath[i].transform.localEulerAngles = localEuler;
+            }
             yield return null;
         }
+        SetMode(Mode.Drawing);
     }
 
-    IEnumerator SpinFlake()
+    IEnumerator SpinFlakeCoroutine()
     {
         if (showDebugLine)
         {
@@ -494,6 +549,52 @@ public class Draw : MonoBehaviour
 
             yield return null;
         }
-        ToggleDebugLines();
+
+        if(meshList.Count == flakesToDraw)
+        {
+            SetMode(Mode.CameraPanning);
+        }
+        else
+        {
+            SetMode(Mode.Drawing);
+        }
+    }
+
+    void SetMode(Mode mode)
+    {
+        currentMode = mode;
+        switch (mode)
+        {
+            case Mode.Drawing:
+                StartDrawing();
+                break;
+            case Mode.ConfirmingFlake:
+                StartConfirmFlake();
+                break;
+            case Mode.CameraPanning:
+                StartCameraPanning();
+                break;
+        }
+    }
+
+    private void StartDrawing()
+    {
+        ShowDebugLine(true);
+        instructions.gameObject.SetActive(true);
+        instructions.SetText($"Draw Snowflakes ({ meshList.Count}/{flakesToDraw})");
+    }
+
+    private void StartConfirmFlake()
+    {
+        StartCoroutine(CameraPanCoroutine());
+        ShowDebugLine(false);
+        instructions.gameObject.SetActive(false);
+    }
+
+    private void StartCameraPanning()
+    {
+        StartCoroutine(CameraPanCoroutine());
+        ShowDebugLine(false);
+        instructions.gameObject.SetActive(false);
     }
 }
