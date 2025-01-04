@@ -10,6 +10,9 @@ using UnityEngine.UI;
 //I swear, ill add a state machine one day
 public class Draw : MonoBehaviour
 {
+
+    public const int flakesToDraw = 3;
+
     [Header("Draw")]
     public float delay = 0.2f;
     public float minSnapDist = 1f;
@@ -51,7 +54,6 @@ public class Draw : MonoBehaviour
     List<SnowFlakeLine> lines = new();
     SnowFlakeLine currentLine;
     float currentDelay = 0;
-    const int flakesToDraw = 3;
 
     float3 previousRecordedPoint;
 
@@ -62,6 +64,10 @@ public class Draw : MonoBehaviour
     //Who has time to code a FSM anyway
     public enum Mode { Drawing, ConfirmingFlake, CameraPanning}
     Mode currentMode = Mode.Drawing;
+
+    public SnowFlakeLine CurrentLine => currentLine;
+    public Mode CurrentMode => currentMode;
+    public List<SnowFlakeLine> CurrentLines => lines;
 
     void Start()
     {
@@ -112,7 +118,7 @@ public class Draw : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            currentLine = new SnowFlakeLine(objectPool, currentColor, lineWidth);
+            currentLine = CreateNewLine();
             AddPointToCurrentLine(ref currentLine, isFirstPoint: true);
             currentDelay = delay;
         }
@@ -155,6 +161,16 @@ public class Draw : MonoBehaviour
         }
     }
 
+    public SnowFlakeLine CreateNewLine()
+    {
+        return new SnowFlakeLine(objectPool, currentColor, lineWidth);
+    }
+
+    public void SetNewLine(in SnowFlakeLine line)
+    {
+        currentLine = line;
+    }
+
     private void Undo()
     {
         if (lines.Count > 0)
@@ -165,7 +181,7 @@ public class Draw : MonoBehaviour
         }
     }
 
-    private void GenerateMesh()
+    public void GenerateMesh()
     {
         var mesh = GenerateMesh(in lines);
         var renderer = flakesPS.GetComponent<ParticleSystemRenderer>();
@@ -192,7 +208,7 @@ public class Draw : MonoBehaviour
         lines.Clear();
     }
 
-    void AddPointToCurrentLine(ref SnowFlakeLine currentLine, bool isFirstPoint = false)
+    private void AddPointToCurrentLine(ref SnowFlakeLine currentLine, bool isFirstPoint = false)
     {
         float3 mousePos = new float3(Input.mousePosition.x, Input.mousePosition.y, math.abs(mainCam.transform.position.z));
 

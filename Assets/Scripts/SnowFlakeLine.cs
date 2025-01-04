@@ -69,7 +69,7 @@ public struct SnowFlakeLine : IDisposable
 
     public int LineCount => points.Length;
     public int GetPointCount(int lineIndex) => points[lineIndex].Length;
-
+    public NativeList<Vector3> GetMainLine() => points[0];
     public float3 GetPoint(int lineIndex, int pointIndex)
     {
         return points[lineIndex][pointIndex];
@@ -83,6 +83,8 @@ public struct SnowFlakeLine : IDisposable
             lineRenderers[i].SetPositions(points[i].AsArray());
         }
     }
+
+    public bool IsCreated => points != null;
 
     public void Dispose()
     {
