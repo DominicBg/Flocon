@@ -10,7 +10,6 @@ using UnityEngine.UI;
 //I swear, ill add a state machine one day
 public class Draw : MonoBehaviour
 {
-
     public const int flakesToDraw = 3;
 
     [Header("Draw")]
@@ -119,7 +118,7 @@ public class Draw : MonoBehaviour
         if (Input.GetMouseButtonDown(0))
         {
             currentLine = CreateNewLine();
-            AddPointToCurrentLine(ref currentLine, isFirstPoint: true);
+            AddPointToLine(MousePos, ref currentLine, isFirstPoint: true);
             currentDelay = delay;
         }
         else if (Input.GetMouseButton(0))
@@ -127,7 +126,7 @@ public class Draw : MonoBehaviour
             //record
             if (currentDelay <= 0)
             {
-                AddPointToCurrentLine(ref currentLine);
+                AddPointToLine(MousePos, ref currentLine);
                 currentDelay = delay;
             }
             else
@@ -208,10 +207,10 @@ public class Draw : MonoBehaviour
         lines.Clear();
     }
 
-    private void AddPointToCurrentLine(ref SnowFlakeLine currentLine, bool isFirstPoint = false)
-    {
-        float3 mousePos = new float3(Input.mousePosition.x, Input.mousePosition.y, math.abs(mainCam.transform.position.z));
+    private float3 MousePos => new float3(Input.mousePosition.x, Input.mousePosition.y, math.abs(mainCam.transform.position.z));
 
+    public void AddPointToLine(float3 mousePos, ref SnowFlakeLine currentLine, bool isFirstPoint = false)
+    {
         //put bool for mode?
         if (!Input.GetKey(KeyCode.LeftShift) && !isFirstPoint)
         {

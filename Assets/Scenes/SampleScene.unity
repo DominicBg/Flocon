@@ -5765,7 +5765,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 447e0864010184d458cc088534816568, type: 2}
   - {fileID: 11400000, guid: 0d0f51b96cf16b04f890d424707580ff, type: 2}
   - {fileID: 11400000, guid: 9df6ca843f0680e45a92392f9229f49d, type: 2}
-  pointInterval: 0.2
+  pointInterval: 0.1
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
