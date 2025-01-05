@@ -1,3 +1,4 @@
+using SCPE;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -5,6 +6,7 @@ using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Pool;
+using UnityEngine.Rendering.PostProcessing;
 using UnityEngine.UI;
 
 //I swear, ill add a state machine one day
@@ -31,6 +33,11 @@ public class Draw : MonoBehaviour
     public AnimationCurve spinCurve;
     public float spinAngles = 360 * 5;
     public float3 acceleration;
+    public float selectDuration = 0.3f;
+    public float selectDelayDurationBefore = 0.1f;
+    public float selectDelayDurationAfter = 0.1f;
+    public float selectRadialBlurIntensity = 0.3f;
+    public float selectAngle = 10f;
 
     [Header("Mesh")]
     public float meshThicc = 1;
@@ -44,6 +51,7 @@ public class Draw : MonoBehaviour
     public MeshFilter[] flakesInPath;
     public TextMeshProUGUI instructions;
     public Image blackFade;
+    public PostProcessVolume postProcessVolume;
 
     [Header("Other")]
     bool showDebugLine = false;
@@ -59,7 +67,7 @@ public class Draw : MonoBehaviour
     Camera mainCam;
 
     List<Mesh> meshList = new List<Mesh>();
-
+    RadialBlur radialBlur;
     //Who has time to code a FSM anyway
     public enum Mode { Drawing, ConfirmingFlake, CameraPanning}
     Mode currentMode = Mode.Drawing;
@@ -76,6 +84,8 @@ public class Draw : MonoBehaviour
 
         flakesPS.Stop();
         SetMode(Mode.Drawing);
+
+        postProcessVolume.profile.TryGetSettings(out radialBlur);
     }
 
     ObjectPool<LineRenderer> CreateObjectPool()
@@ -532,21 +542,28 @@ public class Draw : MonoBehaviour
 
     IEnumerator SpinFlakeCoroutine()
     {
-        float t = 0;
-        float spinSpeed = 1f / spinDuration;
-
-        float3 velocity = 0;
         meshFilter.transform.position = Vector3.zero;
-        bool willGoToCameraPanning = meshList.Count == flakesToDraw;
+        meshFilter.transform.rotation = quaternion.identity;
+        meshFilter.transform.localScale = Vector3.one;
 
+        yield return new WaitForSeconds(selectDelayDurationBefore);
+        yield return FlakeConfirmAnim();
+        yield return new WaitForSeconds(selectDelayDurationAfter);
+
+        bool willGoToCameraPanning = meshList.Count == flakesToDraw;
         if (willGoToCameraPanning)
         {
             StartCoroutine(FadeToBlack(true, spinDuration));
         }
 
+        float3 velocity = 0;
+        float t = 0;
+        float spinSpeed = 1f / spinDuration;
         while (t < 1)
         {
             t += Time.deltaTime * spinSpeed;
+            t = math.saturate(t);
+
             float yEuler = spinCurve.Evaluate(t) * spinAngles;
             quaternion rotation = quaternion.Euler(0, math.radians(yEuler), 0);
             meshFilter.transform.rotation = rotation;
@@ -565,6 +582,22 @@ public class Draw : MonoBehaviour
         else
         {
             SetMode(Mode.Drawing);
+        }
+    }
+
+    IEnumerator FlakeConfirmAnim()
+    {
+        float t = 0;
+        float popSpeed = 1f / selectDuration;
+        while (t < 1)
+        {
+            t += Time.deltaTime * popSpeed;
+            t = math.saturate(t);
+            // first part of the sin that does [0 > 1 > 0] without the negative part
+            float sinScale = math.sin(t * math.PI);
+            radialBlur.amount.value = sinScale * selectRadialBlurIntensity;
+            meshFilter.transform.localEulerAngles = new Vector3(0, 0, sinScale * selectAngle);
+            yield return null;
         }
     }
 
@@ -613,6 +646,7 @@ public class Draw : MonoBehaviour
         while (fade < 1)
         {
             fade += Time.deltaTime * fadeSpeed;
+            fade = math.saturate(fade);
 
             float t = fade;
             if(!fadetoBlack)

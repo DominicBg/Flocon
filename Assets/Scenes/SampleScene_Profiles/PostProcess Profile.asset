@@ -44,6 +44,7 @@ MonoBehaviour:
   - {fileID: 7404031632988608058}
   - {fileID: -6181816570537155189}
   - {fileID: 2968642427497901470}
+  - {fileID: 3645431000628081776}
 --- !u!114 &2968642427497901470
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -88,6 +89,35 @@ MonoBehaviour:
   opacity:
     overrideState: 0
     value: 1
+--- !u!114 &3645431000628081776
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6be0f3e2e9c92846ae26c4e591cb156, type: 3}
+  m_Name: RadialBlur
+  m_EditorClassIdentifier: 
+  active: 1
+  enabled:
+    overrideState: 1
+    value: 1
+  amount:
+    overrideState: 1
+    value: 0
+  center:
+    overrideState: 0
+    value: {x: 0.5, y: 0.5}
+  angle:
+    overrideState: 0
+    value: 0
+  iterations:
+    overrideState: 0
+    value: 6
+  shader: {fileID: 0}
 --- !u!114 &7404031632988608058
 MonoBehaviour:
   m_ObjectHideFlags: 3
