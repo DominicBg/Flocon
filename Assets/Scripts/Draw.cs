@@ -22,12 +22,6 @@ public class Draw : MonoBehaviour
 
     public float3 starPos = new float3(0, 0, -25);
 
-    [Header("Pan")]
-    public float panDuration = 10;
-    public AnimationCurve panCurve;
-    public float fadeToBlackDuration = 1;
-    public float3x3 panBezier;
-
     [Header("Spin")]
     public float spinDuration = 2;
     public AnimationCurve spinCurve;
@@ -39,6 +33,16 @@ public class Draw : MonoBehaviour
     public float selectRadialBlurIntensity = 0.3f;
     public float selectAngle = 10f;
 
+    [Header("Pan")]
+    public float panDuration = 10;
+    public AnimationCurve panCurve;
+    public float fadeToBlackDuration = 1;
+    public float3x3 panBezier;
+    public float3 panStartPos;
+    public float3 panEndPos;
+    public FlakeNoise[] flakeNoises;
+    public int splineResolutionPerSegment = 25;
+
     [Header("Mesh")]
     public float meshThicc = 1;
     public bool doubleFace = false;
@@ -49,6 +53,7 @@ public class Draw : MonoBehaviour
     public MeshFilter meshFilter;
     public LineRenderer lineRendererPrefab;
     public MeshFilter[] flakesInPath;
+
     public TextMeshProUGUI instructions;
     public Image blackFade;
     public PostProcessVolume postProcessVolume;
@@ -69,12 +74,33 @@ public class Draw : MonoBehaviour
     List<Mesh> meshList = new List<Mesh>();
     RadialBlur radialBlur;
     //Who has time to code a FSM anyway
-    public enum Mode { Drawing, ConfirmingFlake, CameraPanning}
+    public enum Mode { Drawing, ConfirmingFlake, CameraPanning }
     Mode currentMode = Mode.Drawing;
 
     public SnowFlakeLine CurrentLine => currentLine;
     public Mode CurrentMode => currentMode;
     public List<SnowFlakeLine> CurrentLines => lines;
+
+    [System.Serializable]
+    public struct FlakeNoise
+    {
+        public float3 initialPosition;
+        public float2 noiseSpeed;
+        public float2 noiseAmp;
+        public float2 noiseOffset;
+        public float3 windStrength;
+
+        //flakes quickly reach a terminal velocity, so applying gravity gives a weird effect
+        public float fallSpeed;
+
+        public float3 CalculateFlakePosition(float t)
+        {
+            float x = noiseAmp.x * noise.cnoise(new float2(t * noiseSpeed.x, noiseOffset.x));
+            float y = fallSpeed * t;
+            float z = noiseAmp.y * noise.cnoise(new float2(t * noiseSpeed.y, noiseOffset.y));
+            return initialPosition + new float3(x, -y, z) + windStrength * t;
+        }
+    }
 
     void Start()
     {
@@ -109,6 +135,7 @@ public class Draw : MonoBehaviour
 
     private void Update()
     {
+        DebugFlakePath();
         switch (currentMode)
         {
             case Mode.Drawing:
@@ -224,6 +251,7 @@ public class Draw : MonoBehaviour
         //put bool for mode?
         if (!Input.GetKey(KeyCode.LeftShift) && !isFirstPoint)
         {
+            //Snap point in angles
             if (math.any(math.abs(mousePos - previousRecordedPoint) > minSnapDist))
             {
                 float3 delta = mousePos - previousRecordedPoint;
@@ -318,7 +346,7 @@ public class Draw : MonoBehaviour
                         int triIndex = vertices.Length;
 
                         //Second iteration can blend corners
-                        if(i > 1)
+                        if (i > 1)
                         {
                             int prevTriIndex = triIndex - vertexPerLine;
                             float3 prevTopLeft = vertices[prevTriIndex + topLeftIndex];
@@ -439,7 +467,7 @@ public class Draw : MonoBehaviour
             }
         }
 
-        if(doubleFace)
+        if (doubleFace)
         {
             int vertexCount = vertices.Length;
             for (int i = 0; i < vertexCount; i += 4)
@@ -455,7 +483,7 @@ public class Draw : MonoBehaviour
                 v3.z = -v3.z;
 
                 int triIndex = vertices.Length;
-                vertices.Add(v0); 
+                vertices.Add(v0);
                 vertices.Add(v1);
                 vertices.Add(v2);
                 vertices.Add(v3);
@@ -489,55 +517,6 @@ public class Draw : MonoBehaviour
 
         vertices.Dispose();
         return mesh;
-    }
-
-    IEnumerator CameraPanCoroutine()
-    {
-        flakesPS.Play();
-
-        int flakeCount = math.min(flakesInPath.Length, meshList.Count);
-        for (int i = 0; i < flakeCount; i++)
-        {
-            flakesInPath[i].mesh = meshList[i];
-
-            //create a division between points
-            //lines are index, x are desired pos
-            //| x | x | x | x |
-            float ratio = ((float)i + 1) / (flakeCount + 1);
-            float3 bezierPos = SnowFlakeUtils.Bezier(panBezier, ratio);
-            flakesInPath[i].transform.position = bezierPos;
-
-            const float dt = 0.01f;
-            float3 bezierDx = (bezierPos - SnowFlakeUtils.Bezier(panBezier, ratio + dt)) / dt;
-            quaternion alignedRotation = quaternion.LookRotation(bezierDx, math.up());
-            flakesInPath[i].transform.rotation = alignedRotation;
-        }
-
-        StartCoroutine(FadeToBlack(false, fadeToBlackDuration));
-
-        float t = 0;
-        float panSpeed = 1f / panDuration;
-        while (t < 1)
-        {
-            t += Time.deltaTime * panSpeed;
-
-            float3 position = SnowFlakeUtils.Bezier(panBezier, t);
-            float3 positionDt = SnowFlakeUtils.Bezier(panBezier, t + 0.01f);
-
-            quaternion bezierRotation = quaternion.LookRotation(math.normalize(positionDt - position), math.up());
-
-            mainCam.transform.position = position;
-            mainCam.transform.rotation = bezierRotation; // math.slerp(startRot, endRot, t);
-
-            for (int i = 0; i < flakeCount; i++)
-            {
-                float3 localEuler = flakesInPath[i].transform.localEulerAngles;
-                localEuler.z = t * 360;
-                flakesInPath[i].transform.localEulerAngles = localEuler;
-            }
-            yield return null;
-        }
-        SetMode(Mode.Drawing);
     }
 
     IEnumerator SpinFlakeCoroutine()
@@ -575,13 +554,125 @@ public class Draw : MonoBehaviour
             yield return null;
         }
 
-        if(willGoToCameraPanning)
+        if (willGoToCameraPanning)
         {
             SetMode(Mode.CameraPanning);
         }
         else
         {
             SetMode(Mode.Drawing);
+        }
+    }
+
+    IEnumerator CameraPanCoroutine()
+    {
+        flakesPS.Play();
+
+        int flakeCount = math.min(flakesInPath.Length, meshList.Count);
+        for (int i = 0; i < flakeCount; i++)
+        {
+            flakesInPath[i].mesh = meshList[i];
+
+            //create a division between points
+            //lines are index, x are desired pos
+            //| x | x | x | x |
+            float ratio = ((float)i + 1) / (flakeCount + 1);
+            float3 bezierPos = SnowFlakeUtils.Bezier(panBezier, ratio);
+            flakesInPath[i].transform.position = bezierPos;
+
+            const float dt = 0.01f;
+            float3 bezierDx = (bezierPos - SnowFlakeUtils.Bezier(panBezier, ratio + dt)) / dt;
+            quaternion alignedRotation = quaternion.LookRotation(bezierDx, math.up());
+            flakesInPath[i].transform.rotation = alignedRotation;
+        }
+
+        StartCoroutine(FadeToBlack(false, fadeToBlackDuration));
+
+        float3[] cameraPositions = CalculateCameraPanTrack();
+
+        Spline spline = MoreMaths.SplineFactory.GenerateSpline(cameraPositions, splineResolutionPerSegment, x => x);
+
+        float t = 0;
+        float panSpeed = 1f / panDuration;
+
+        while (t < 1)
+        {
+            t += Time.deltaTime * panSpeed;
+
+            float3 position = spline.Lerp(t);
+            float3 positionDt = spline.Lerp(t + 0.01f); //record prevPos for max perf?
+
+            quaternion splineRotation = quaternion.LookRotation(math.normalize(positionDt - position), math.up());
+
+            mainCam.transform.position = position;
+            mainCam.transform.rotation = splineRotation;
+
+            float duration = t * panDuration;
+            for (int i = 0; i < flakeCount; i++)
+            {
+                //todo redo this part
+                float3 localEuler = flakesInPath[i].transform.localEulerAngles;
+                localEuler.z = t * 360;
+                flakesInPath[i].transform.localEulerAngles = localEuler;
+
+                flakesInPath[i].transform.position = flakeNoises[i].CalculateFlakePosition(duration);
+            }
+
+            yield return null;
+        }
+        SetMode(Mode.Drawing);
+    }
+
+    float3[] CalculateCameraPanTrack()
+    {
+        //+2 for initial and end position
+        float3[] cameraPosition = new float3[flakesInPath.Length + 2];
+
+        //5 waypoint, so we have 4 separation
+        float durationPerPathSegment = panDuration / (cameraPosition.Length - 1);
+        for (int i = 0; i < flakesInPath.Length; i++)
+        {
+            float timeToReachFlake = (i + 1) * durationPerPathSegment;
+            float3 flakePredictedPosition = flakeNoises[i].CalculateFlakePosition(timeToReachFlake);
+            cameraPosition[i + 1] = flakePredictedPosition;
+        }
+        cameraPosition[0] = panStartPos;
+        cameraPosition[cameraPosition.Length - 1] = panEndPos;
+
+        return cameraPosition;
+    }
+
+    void DebugFlakePath()
+    {
+        float3[] cameraPositions = CalculateCameraPanTrack();
+
+        //Camera Path
+        for (int i = 1; i < cameraPositions.Length; i++)
+        {
+            Debug.DrawLine(cameraPositions[i - 1], cameraPositions[i], Color.cyan);
+        }
+
+        Spline spline = MoreMaths.SplineFactory.GenerateSpline(cameraPositions, splineResolutionPerSegment, x => x);
+
+        //Camera Path
+        for (int i = 1; i < spline.SegmentLength; i++)
+        {
+            Debug.DrawLine(spline.SegmentPositions[i - 1], spline.SegmentPositions[i], Color.green);
+        }
+
+        //Flake falling
+        const int debugAccuracy = 100;
+        float fallingDebugStep = (1f / debugAccuracy) * panDuration;
+        for (int i = 0; i < flakesInPath.Length; i++)
+        {
+            float3 prevPos = flakeNoises[i].CalculateFlakePosition(0);
+            for (int j = 1; j < debugAccuracy; j++)
+            {
+                float t = j * fallingDebugStep;
+                float3 currentPos = flakeNoises[i].CalculateFlakePosition(t);
+                Debug.DrawLine(prevPos, currentPos);
+                prevPos = currentPos;
+            }
         }
     }
 
@@ -649,7 +740,7 @@ public class Draw : MonoBehaviour
             fade = math.saturate(fade);
 
             float t = fade;
-            if(!fadetoBlack)
+            if (!fadetoBlack)
             {
                 t = (1 - fade);
             }

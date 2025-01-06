@@ -5759,8 +5759,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawer: {fileID: 1638404882}
-  inPlayBack: 1
-  toSave: {fileID: 11400000, guid: 447e0864010184d458cc088534816568, type: 2}
+  inPlayBack: 0
+  toSave: {fileID: 11400000, guid: 0d0f51b96cf16b04f890d424707580ff, type: 2}
   toPlayBack:
   - {fileID: 11400000, guid: 447e0864010184d458cc088534816568, type: 2}
   - {fileID: 11400000, guid: 0d0f51b96cf16b04f890d424707580ff, type: 2}
@@ -11162,6 +11162,41 @@ MonoBehaviour:
     x: 0
     y: 0
     z: -25
+  spinDuration: 2
+  spinCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spinAngles: 240
+  acceleration:
+    x: 7
+    y: -24
+    z: 15
+  selectDuration: 0.5
+  selectDelayDurationBefore: 0.1
+  selectDelayDurationAfter: 0.3
+  selectRadialBlurIntensity: 0.3
+  selectAngle: 0.5
   panDuration: 15
   panCurve:
     serializedVersion: 2
@@ -11201,41 +11236,57 @@ MonoBehaviour:
       x: -100
       y: 0
       z: 100
-  spinDuration: 2
-  spinCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  spinAngles: 240
-  acceleration:
-    x: 7
-    y: -24
-    z: 15
-  selectDuration: 0.5
-  selectDelayDurationBefore: 0.1
-  selectDelayDurationAfter: 0.3
-  selectRadialBlurIntensity: 0.3
-  selectAngle: 0.5
+  panStartPos:
+    x: 0
+    y: 0
+    z: -100
+  panEndPos:
+    x: 0
+    y: 0
+    z: 100
+  flakeNoises:
+  - initialPosition:
+      x: 0
+      y: 50
+      z: -50
+    noiseSpeed:
+      x: 1
+      y: 1
+    noiseAmp:
+      x: 1
+      y: 1
+    noiseOffset:
+      x: 0
+      y: 0
+    fallSpeed: 10
+  - initialPosition:
+      x: 0
+      y: 88.2
+      z: 0
+    noiseSpeed:
+      x: 1
+      y: 1
+    noiseAmp:
+      x: 1
+      y: 1
+    noiseOffset:
+      x: 1
+      y: 1
+    fallSpeed: 10
+  - initialPosition:
+      x: 0
+      y: 101.1
+      z: 50
+    noiseSpeed:
+      x: 1
+      y: 1
+    noiseAmp:
+      x: 1
+      y: 1
+    noiseOffset:
+      x: 2
+      y: 2
+    fallSpeed: 10
   meshThicc: 0.5
   doubleFace: 1
   optimizeTriangles: 1
@@ -11246,7 +11297,6 @@ MonoBehaviour:
   - {fileID: 1568661195}
   - {fileID: 1788497101}
   - {fileID: 2043464339}
-  - {fileID: 474231562}
   instructions: {fileID: 837409999}
   blackFade: {fileID: 1782411675}
   postProcessVolume: {fileID: 621260135}
