@@ -3,6 +3,7 @@ Just draw a snowflake, then press "B"
 
 Once you draw 3, sit back and enjoy the small visual
 
+![](gifs/draw.gif)
 
 # Tech stuff
 - Drawing is represented with Line Renderers.
@@ -12,3 +13,8 @@ Once you draw 3, sit back and enjoy the small visual
 - 3 Flakes will be Game Objects falling with a certain noise
 - A spline is created to intersect the center of the flake at a the right time
 
+![](gifs/path1.gif)
+![](gifs/path2.gif)
+
+
+https://www.instagram.com/p/DEh9f18RU6Q/
