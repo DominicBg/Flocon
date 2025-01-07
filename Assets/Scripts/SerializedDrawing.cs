@@ -4,6 +4,10 @@ using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 [CreateAssetMenu(fileName = "SerializedDrawing", menuName = "ScriptableObjects/SerializedDrawing", order = 1)]
 public class SerializedDrawing : ScriptableObject
 {
@@ -26,6 +30,10 @@ public class SerializedDrawing : ScriptableObject
             }
         }
         allPoints = pointList.ToArray();
+
+#if UNITY_EDITOR
+        EditorUtility.SetDirty(this);
+#endif
     }
 
     public List<Vector3>[] Deserialize()

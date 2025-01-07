@@ -568,39 +568,38 @@ public class Draw : MonoBehaviour
     {
         flakesPS.Play();
 
-        int flakeCount = math.min(flakesInPath.Length, meshList.Count);
-        for (int i = 0; i < flakeCount; i++)
-        {
-            flakesInPath[i].mesh = meshList[i];
-
-            //create a division between points
-            //lines are index, x are desired pos
-            //| x | x | x | x |
-            float ratio = ((float)i + 1) / (flakeCount + 1);
-            float3 bezierPos = SnowFlakeUtils.Bezier(panBezier, ratio);
-            flakesInPath[i].transform.position = bezierPos;
-
-            const float dt = 0.01f;
-            float3 bezierDx = (bezierPos - SnowFlakeUtils.Bezier(panBezier, ratio + dt)) / dt;
-            quaternion alignedRotation = quaternion.LookRotation(bezierDx, math.up());
-            flakesInPath[i].transform.rotation = alignedRotation;
-        }
-
         StartCoroutine(FadeToBlack(false, fadeToBlackDuration));
 
         float3[] cameraPositions = CalculateCameraPanTrack();
 
         Spline spline = MoreMaths.SplineFactory.GenerateSpline(cameraPositions, splineResolutionPerSegment, x => x);
 
+        int flakeCount = math.min(flakesInPath.Length, meshList.Count);
+        for (int i = 0; i < flakeCount; i++)
+        {
+            flakesInPath[i].mesh = meshList[i];
+       
+            const float dt = 0.01f;
+            float3 splinePos = spline.Lerp( TimeToReachFlakes(i) / panDuration);
+            float3 splineNextPos = spline.Lerp((TimeToReachFlakes(i) + dt) / panDuration);
+
+            float3 splineDx = (splinePos - splineNextPos) / dt;
+            quaternion alignedRotation = quaternion.LookRotation(splineDx, math.up());
+
+            //Prealign flakes
+            flakesInPath[i].transform.rotation = alignedRotation;
+        }
+
         float t = 0;
         float panSpeed = 1f / panDuration;
 
         while (t < 1)
         {
+            float prevt = t;
             t += Time.deltaTime * panSpeed;
 
-            float3 position = spline.Lerp(t);
-            float3 positionDt = spline.Lerp(t + 0.01f); //record prevPos for max perf?
+            float3 position = spline.SlowAccurateLerp(t);
+            float3 positionDt = spline.SlowAccurateLerp(t + 0.01f); //record prevPos for max perf?
 
             quaternion splineRotation = quaternion.LookRotation(math.normalize(positionDt - position), math.up());
 
@@ -618,9 +617,23 @@ public class Draw : MonoBehaviour
                 flakesInPath[i].transform.position = flakeNoises[i].CalculateFlakePosition(duration);
             }
 
+            const float startFade = 0.90f;
+            if(prevt < startFade && t >= startFade)
+            {
+                float fadeTime = (1 - startFade) * panDuration;
+                StartCoroutine(FadeToBlack(true, fadeTime));
+            }
+
             yield return null;
         }
         SetMode(Mode.Drawing);
+    }
+
+    float TimeToReachFlakes(int flakeIndex)
+    {
+        float durationPerPathSegment = panDuration / (flakesToDraw + 1);
+        float timeToReachFlake = (flakeIndex + 1) * durationPerPathSegment;
+        return timeToReachFlake;
     }
 
     float3[] CalculateCameraPanTrack()
@@ -629,10 +642,9 @@ public class Draw : MonoBehaviour
         float3[] cameraPosition = new float3[flakesInPath.Length + 2];
 
         //5 waypoint, so we have 4 separation
-        float durationPerPathSegment = panDuration / (cameraPosition.Length - 1);
         for (int i = 0; i < flakesInPath.Length; i++)
         {
-            float timeToReachFlake = (i + 1) * durationPerPathSegment;
+            float timeToReachFlake = TimeToReachFlakes(i);
             float3 flakePredictedPosition = flakeNoises[i].CalculateFlakePosition(timeToReachFlake);
             cameraPosition[i + 1] = flakePredictedPosition;
         }

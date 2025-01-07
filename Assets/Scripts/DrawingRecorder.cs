@@ -75,28 +75,6 @@ public class DrawingRecorder : MonoBehaviour
         {
             currentPointInterval -= pointInterval;
 
-            drawer.CurrentLine.AddPoint(allLines[index.lineIndex][index.pointIndex]);
-
-            if(index.pointIndex >= 1)
-            {
-                for (int i = 0; i < lerpPosEnd.Length; i++)
-                {
-                    //Cache it because we modify it in the lerping
-                    lerpPosEnd[i] = drawer.CurrentLine.GetPoint(i, index.pointIndex);
-                }
-                currentLineLength = math.distance(drawer.CurrentLine.GetPoint(0, index.pointIndex), drawer.CurrentLine.GetPoint(0, index.pointIndex - 1));
-                pointInterval = (1f / drawSpeed) * currentLineLength;
-            }
-            else
-            {
-                for (int i = 0; i < lerpPosEnd.Length; i++)
-                {
-                    //Cache it because we modify it in the lerping
-                    lerpPosEnd[i] = 0;
-                }
-            }
-
-            index.pointIndex++;
 
             //reach end of single line
             if (index.pointIndex == allLines[index.lineIndex].Count)
@@ -117,7 +95,53 @@ public class DrawingRecorder : MonoBehaviour
                 index.lineIndex = 0;
                 index.flakeIndex++;
                 allLines = null;
+                return;
             }
+
+            drawer.CurrentLine.AddPoint(allLines[index.lineIndex][index.pointIndex]);
+
+            if(index.pointIndex >= 1)
+            {
+                for (int i = 0; i < lerpPosEnd.Length; i++)
+                {
+                    //Cache it because we modify it in the lerping
+                    lerpPosEnd[i] = drawer.CurrentLine.GetPoint(i, index.pointIndex);
+                }
+                currentLineLength = math.distance(drawer.CurrentLine.GetPoint(0, index.pointIndex), drawer.CurrentLine.GetPoint(0, index.pointIndex - 1));
+                pointInterval = (1f / drawSpeed) * currentLineLength;
+            }
+            else
+            {
+                for (int i = 0; i < lerpPosEnd.Length; i++)
+                {
+                    //Cache it because we modify it in the lerping
+                    lerpPosEnd[i] = 0;
+                }
+                //pointInterval = 0.2f;
+            }
+
+            index.pointIndex++;
+
+            ////reach end of single line
+            //if (index.pointIndex == allLines[index.lineIndex].Count)
+            //{
+            //    drawer.CurrentLines.Add(drawer.CurrentLine);
+            //    drawer.SetNewLine(drawer.CreateNewLine());
+
+            //    index.pointIndex = 0;
+            //    index.lineIndex++;
+            //}
+
+            ////reach end of all lines
+            //if (index.lineIndex == allLines.Length)
+            //{
+            //    drawer.GenerateMesh();
+
+            //    index.pointIndex = 0;
+            //    index.lineIndex = 0;
+            //    index.flakeIndex++;
+            //    allLines = null;
+            //}
         }
         
         //Smooth the drawing

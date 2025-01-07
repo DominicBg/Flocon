@@ -232,7 +232,7 @@ ParticleSystem:
   prewarm: 1
   playOnAwake: 0
   useUnscaledTime: 0
-  autoRandomSeed: 1
+  autoRandomSeed: 0
   startDelay:
     serializedVersion: 2
     minMaxState: 0
@@ -289,7 +289,7 @@ ParticleSystem:
   moveWithTransform: 0
   moveWithCustomTransform: {fileID: 0}
   scalingMode: 1
-  randomSeed: 0
+  randomSeed: -1344582422
   InitialModule:
     serializedVersion: 3
     enabled: 1
@@ -1047,7 +1047,7 @@ ParticleSystem:
     rateOverTime:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 25
+      scalar: 15
       minScalar: 10
       maxCurve:
         serializedVersion: 2
@@ -5760,10 +5760,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawer: {fileID: 1638404882}
   inPlayBack: 0
-  toSave: {fileID: 11400000, guid: 0d0f51b96cf16b04f890d424707580ff, type: 2}
+  toSave: {fileID: 11400000, guid: 287027411b585f54193b1ff99c802f23, type: 2}
   toPlayBack:
   - {fileID: 11400000, guid: 447e0864010184d458cc088534816568, type: 2}
-  - {fileID: 11400000, guid: 0d0f51b96cf16b04f890d424707580ff, type: 2}
+  - {fileID: 11400000, guid: 287027411b585f54193b1ff99c802f23, type: 2}
   - {fileID: 11400000, guid: 9df6ca843f0680e45a92392f9229f49d, type: 2}
   pointInterval: 0.1
   drawSpeed: 10
@@ -6113,7 +6113,7 @@ ParticleSystem:
   prewarm: 1
   playOnAwake: 1
   useUnscaledTime: 0
-  autoRandomSeed: 1
+  autoRandomSeed: 0
   startDelay:
     serializedVersion: 2
     minMaxState: 0
@@ -10809,7 +10809,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1073369060}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.28, y: 65, z: 54.4}
+  m_LocalPosition: {x: -1.28, y: 88.9, z: 54.4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -11155,7 +11155,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   delay: 0.02
-  minSnapDist: 9
+  minSnapDist: 15
   lineWidth: 0.4
   currentColor: {r: 1, g: 1, b: 1, a: 1}
   starPos:
@@ -11238,55 +11238,68 @@ MonoBehaviour:
       z: 100
   panStartPos:
     x: 0
-    y: 0
+    y: 29.93
     z: -100
   panEndPos:
     x: 0
-    y: 0
+    y: 29.93
     z: 100
   flakeNoises:
   - initialPosition:
-      x: 0
+      x: 2.58
       y: 50
       z: -50
     noiseSpeed:
-      x: 1
-      y: 1
+      x: 0.5
+      y: 0.1
     noiseAmp:
-      x: 1
-      y: 1
+      x: 2
+      y: 0
     noiseOffset:
       x: 0
       y: 0
-    fallSpeed: 10
+    windStrength:
+      x: 1.62
+      y: 0
+      z: 0
+    fallSpeed: 5
   - initialPosition:
       x: 0
-      y: 88.2
+      y: 68.9
       z: 0
     noiseSpeed:
-      x: 1
-      y: 1
+      x: 0.5
+      y: 0.1
     noiseAmp:
-      x: 1
-      y: 1
+      x: 2
+      y: 0
     noiseOffset:
       x: 1
       y: 1
-    fallSpeed: 10
-  - initialPosition:
+    windStrength:
       x: 0
-      y: 101.1
+      y: 0
+      z: 0
+    fallSpeed: 5
+  - initialPosition:
+      x: 28
+      y: 81.3
       z: 50
     noiseSpeed:
-      x: 1
-      y: 1
+      x: 0.5
+      y: 0.1
     noiseAmp:
-      x: 1
-      y: 1
+      x: 2
+      y: 0
     noiseOffset:
       x: 2
       y: 2
-    fallSpeed: 10
+    windStrength:
+      x: -2.2
+      y: 0
+      z: 0
+    fallSpeed: 5
+  splineResolutionPerSegment: 25
   meshThicc: 0.5
   doubleFace: 1
   optimizeTriangles: 1
